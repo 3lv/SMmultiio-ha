@@ -52,7 +52,6 @@ class Number(NumberEntity):
         if name == "":
             name = NAME_PREFIX + str(stack) + "_" + type + "_" + chan
         self._name = name
-        _LOGGER.error("%s", stack)
         self._stack = int(stack)
         self._type = type
         self._chan = int(chan)

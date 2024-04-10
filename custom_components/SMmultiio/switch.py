@@ -100,4 +100,4 @@ class Switch(SwitchEntity):
         try:
             self._SM_set(self._chan, 0)
         except Exception as ex:
-            _LOGGER.error("Multiio %s turn OFF failed, %e", self._type, ex);
+            _LOGGER.error(NAME_PREFIX + " %s turn OFF failed, %e", self._type, ex);
