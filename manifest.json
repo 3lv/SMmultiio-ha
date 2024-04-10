@@ -1,0 +1,9 @@
+{
+	"version": "1.0.0",
+	"domain": "SMmultiio",
+	"name": "Sequent Microsystems Multi-IO Switch",
+	"documentation": "TODO",
+	"dependencies": [],
+	"codeownders": [],
+	"requirements": ["SMmultiio>=1.2.4"]
+}

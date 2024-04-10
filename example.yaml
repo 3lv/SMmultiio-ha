@@ -1,0 +1,5 @@
+switch:
+  - platform: SMioplus_relay
+    name: Relay1
+    chan: 1
+    stack: 0
