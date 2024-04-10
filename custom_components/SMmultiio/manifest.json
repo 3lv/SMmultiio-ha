@@ -1,9 +1,13 @@
 {
-	"version": "1.0.0",
 	"domain": "SMmultiio",
-	"name": "Sequent Microsystems Multi-IO Switch",
-	"documentation": "TODO",
+	"name": "Sequent Microsystems Multi-IO Integraion",
+	"version": "1.0.0",
+	"integration_type": "device",
+	"documentation": "https://TODO",
+	"issue_tracker": "https://TODO",
 	"dependencies": [],
-	"codeownders": [],
+	"after_dependencies": [],
+	"codeownders": ["3lv"],
+	"config_flow": false,
 	"requirements": ["SMmultiio>=1.2.4"]
 }
