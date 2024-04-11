@@ -11,6 +11,7 @@ import multiio as SMmultiio
 from homeassistant.components.light import PLATFORM_SCHEMA
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.number import NumberEntity
+from homeassistant.helpers.entity import generate_entity_id
 
 from . import (
         DOMAIN, CONF_STACK, CONF_TYPE, CONF_CHAN, CONF_NAME,
@@ -33,9 +34,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class Number(NumberEntity):
     """Sequent Microsystems Multiio Switch"""
     def __init__(self, name, stack, type, chan):
-        if name == "":
-            name = NAME_PREFIX + str(stack) + "_" + type + "_" + chan
-        self._name = name
+        self._entity_id = generate_entity_id("number.{}", DOMAIN + stack + "_" + type + "_" + chan)
+        self._name = name or DOMAIN + str(stack) + "_" + type + "_" + chan
         self._stack = int(stack)
         self._type = type
         self._chan = int(chan)
@@ -72,6 +72,10 @@ class Number(NumberEntity):
             self._icon = self._icons["on"]
         else:
             self._icon = self._icons["off"]
+
+    @property
+    def unique_id(self):
+        return self._unique_id
 
     @property
     def name(self):
