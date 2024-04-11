@@ -22,7 +22,7 @@ SMmultiio:
 """
 
 DOMAIN = "SMmultiio"
-NAME_PREFIX = "SMmultiio"
+NAME_PREFIX = "mio"
 SM_MAP = {
     "sensor":  {
         "rtd_res": {
