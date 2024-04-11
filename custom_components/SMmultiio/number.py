@@ -23,22 +23,6 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     # We want this platform to be setup via discovery
     if discovery_info == None:
         return
-    type = discovery_info.get(CONF_TYPE)
-    if type == "ALL":
-        entities = []
-        stack=discovery_info.get(CONF_STACK, 0)
-        for sensor, attr in SM_NUMBER_MAP.items():
-            for chan in range(int(attr["chan_no"])):
-                entities.append(Number(
-                    name=NAME_PREFIX+str(stack)+"_"+sensor+"_"+str(chan+1),
-                    stack=stack,
-                    type=sensor,
-                    chan=str(chan+1)
-                ))
-        add_devices(entities)
-        return
-    elif type not in SM_NUMBER_MAP:
-        return
     add_devices([Number(
 		name=discovery_info.get(CONF_NAME, ""),
         stack=discovery_info.get(CONF_STACK, 0),
@@ -82,7 +66,7 @@ class Number(NumberEntity):
         try:
             self._value = self._SM_get(self._chan)
         except Exception as ex:
-            _LOGGER.error(NAME_PREFIX + " %s update() failed, %e, %s, %s", self._type, ex, str(self._stack), str(self._chan))
+            _LOGGER.error(DOMAIN + " %s update() failed, %e, %s, %s", self._type, ex, str(self._stack), str(self._chan))
             return
         if self._value != 0:
             self._icon = self._icons["on"]
@@ -121,4 +105,4 @@ class Number(NumberEntity):
         try:
             self._SM_set(self._chan, value)
         except Exception as ex:
-            _LOGGER.error(NAME_PREFIX + " %s setting value failed, %e", self._type, ex)
+            _LOGGER.error(DOMAIN + " %s setting value failed, %e", self._type, ex)

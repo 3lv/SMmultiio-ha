@@ -24,23 +24,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     # We want this platform to be setup via discovery
     if discovery_info == None:
         return
-    type = discovery_info.get(CONF_TYPE)
-    if type == "ALL":
-        entities = []
-        stack = discovery_info.get(CONF_STACK, 0)
-        for sensor, attr in SM_SWITCH_MAP.items():
-            for chan in range(int(attr["chan_no"])):
-                entities.append(Switch(
-                    name=NAME_PREFIX+str(stack)+"_"+sensor+"_"+str(chan+1),
-                    #name=f"{NAME_PREFIX}{stack}_{sensor}_{chan+1}",
-                    stack=stack,
-                    type=sensor,
-                    chan=str(chan+1)
-                ))
-        add_devices(entities)
-        return
-    elif type not in SM_SWITCH_MAP:
-        return
+    # TODO CHECK IF ALREADY CONFIGURED FOR WHATEVER REASON
     add_devices([Switch(
 		name=discovery_info.get(CONF_NAME, ""),
         stack=discovery_info.get(CONF_STACK, 0),
@@ -71,7 +55,7 @@ class Switch(SwitchEntity):
         try:
             self._is_on = self._SM_get(self._chan)
         except Exception as ex:
-            _LOGGER.error(NAME_PREFIX + " %s update() failed, %e, %s, %s", self._type, ex, str(self._stack), str(self._chan))
+            _LOGGER.error(DOMAIN + " %s update() failed, %e, %s, %s", self._type, ex, str(self._stack), str(self._chan))
             return
         if self._is_on:
             self._icon = self._icons["on"]
@@ -94,10 +78,10 @@ class Switch(SwitchEntity):
         try:
             self._SM_set(self._chan, 1)
         except Exception as ex:
-            _LOGGER.error(NAME_PREFIX + " %s turn ON failed, %e", self._type, ex)
+            _LOGGER.error(DOMAIN + " %s turn ON failed, %e", self._type, ex)
 
     def turn_off(self, **kwargs):
         try:
             self._SM_set(self._chan, 0)
         except Exception as ex:
-            _LOGGER.error(NAME_PREFIX + " %s turn OFF failed, %e", self._type, ex);
+            _LOGGER.error(DOMAIN + " %s turn OFF failed, %e", self._type, ex);

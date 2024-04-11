@@ -34,7 +34,8 @@ SM_MAP = {
                 "icon": {
                     "on": "mdi:flash-triangle",
                     "off": "mdi:flash-triangle"
-                }
+                },
+                "optional": True
         },
         "rtd_temp": {
                 "chan_no": 2,
@@ -174,17 +175,10 @@ def load_platform(hass, entity_config):
                         platform_type, DOMAIN, entity_config, entity_config
                 )
 def load_all_platforms(hass, stack=0):
-    for platform_type in SM_MAP:
-        entity_config = {
-                CONF_STACK: stack,
-                CONF_TYPE: "ALL"
-        }
-        hass.helpers.discovery.load_platform(
-                platform_type, DOMAIN, entity_config, entity_config
-        )
-def UPDATED_load_all_platforms(hass, stack=0):
     for platform_type, platform in SM_MAP.items():
         for type, attr in platform.items():
+            if attr.get("optional", False):
+                continue
             for chan in range(int(attr["chan_no"])):
                 entity_config = {
                         CONF_NAME: NAME_PREFIX+str(stack)+"_"+type+"_"+str(chan+1),
