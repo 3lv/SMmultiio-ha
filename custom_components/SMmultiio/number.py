@@ -34,8 +34,9 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class Number(NumberEntity):
     """Sequent Microsystems Multiio Switch"""
     def __init__(self, name, stack, type, chan):
-        self._entity_id = generate_entity_id("number.{}", DOMAIN + stack + "_" + type + "_" + chan)
-        self._name = name or DOMAIN + str(stack) + "_" + type + "_" + chan
+        generated_name = DOMAIN + str(stack) + "_" + type + "_" + str(chan)
+        self._unique_id = generate_entity_id("number.{}", generated_name)
+        self._name = name or generated_name
         self._stack = int(stack)
         self._type = type
         self._chan = int(chan)
