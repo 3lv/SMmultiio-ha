@@ -176,6 +176,8 @@ def load_platform(hass, entity_config):
                 )
 def load_all_platforms(hass, stack=0):
     for platform_type, platform in SM_MAP.items():
+        if pplatform_type == "number":
+            _LOGGER.error("DEBUG: Found number in map")
         for type, attr in platform.items():
             if attr.get("optional", False):
                 continue
