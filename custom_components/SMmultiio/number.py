@@ -28,14 +28,15 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 		name=discovery_info.get(CONF_NAME, ""),
         stack=discovery_info.get(CONF_STACK, 0),
         type=discovery_info.get(CONF_TYPE),
-        chan=discovery_info.get(CONF_CHAN)
+        chan=discovery_info.get(CONF_CHAN),
+        hass=hass
 	)])
 
 class Number(NumberEntity):
     """Sequent Microsystems Multiio Switch"""
-    def __init__(self, name, stack, type, chan):
+    def __init__(self, name, stack, type, chan, hass):
         generated_name = DOMAIN + str(stack) + "_" + type + "_" + str(chan)
-        self._unique_id = generate_entity_id("number.{}", generated_name)
+        self._unique_id = generate_entity_id("number.{}", generated_name, hass=hass)
         self._name = name or generated_name
         self._stack = int(stack)
         self._type = type
