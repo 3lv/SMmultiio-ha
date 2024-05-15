@@ -10,6 +10,7 @@ from homeassistant.const import (
 from homeassistant.components.light import PLATFORM_SCHEMA
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.helpers.entity import generate_entity_id
 
 from . import (
         DOMAIN, CONF_STACK, CONF_TYPE, CONF_CHAN, CONF_NAME,
@@ -29,15 +30,16 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 		name=discovery_info.get(CONF_NAME, ""),
         stack=discovery_info.get(CONF_STACK, 0),
         type=discovery_info.get(CONF_TYPE),
-        chan=discovery_info.get(CONF_CHAN)
+        chan=discovery_info.get(CONF_CHAN),
+        hass=hass,
 	)])
 
 class Switch(SwitchEntity):
     """Sequent Microsystems Multiio Switch"""
-    def __init__(self, name, stack, type, chan):
-        if name == "":
-            name = NAME_PREFIX + str(stack) + "_" + type + "_" + chan
-        self._name = name
+    def __init__(self, name, stack, type, chan, hass):
+        generated_name = DOMAIN + str(stack) + "_" + type + "_" + str(chan)
+        self._unique_id = generate_entity_id("switch.{}", generated_name, hass=hass)
+        self._name = name or generated_name
         self._stack = int(stack)
         self._type = type
         self._chan = int(chan)
@@ -51,7 +53,7 @@ class Switch(SwitchEntity):
         self._icon = self._icons["off"]
 
     def update(self):
-        time.sleep(.05)
+        time.sleep(self._short_timeout)
         try:
             self._is_on = self._SM_get(self._chan)
         except Exception as ex:

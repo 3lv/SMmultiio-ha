@@ -10,6 +10,7 @@ import multiio as SMmultiio
 from homeassistant.components.light import PLATFORM_SCHEMA
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.helpers.entity import generate_entity_id
 
 from . import (
         DOMAIN, CONF_STACK, CONF_TYPE, CONF_CHAN, CONF_NAME,
@@ -36,20 +37,21 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 		name=discovery_info.get(CONF_NAME, ""),
         stack=discovery_info.get(CONF_STACK, 0),
         type=discovery_info.get(CONF_TYPE),
-        chan=discovery_info.get(CONF_CHAN)
+        chan=discovery_info.get(CONF_CHAN),
+        hass=hass
 	)])
 
 class Sensor(SensorEntity):
     """Sequent Microsystems Multiio Sensor"""
-    def __init__(self, name, stack, type, chan):
-        if name == "":
-            name = NAME_PREFIX + str(stack) + "_" + type + "_" + chan
-        self._name = name
+    def __init__(self, name, stack, type, chan, hass):
+        generated_name = DOMAIN + str(stack) + "_" + type + "_" + str(chan)
+        self._unique_id = generate_entity_id("sensor.{}", generated_name, hass=hass)
+        self._name = name or generated_name
         self._stack = int(stack)
         self._type = type
         self._chan = int(chan)
         self._SM = SMmultiio.SMmultiio(self._stack)
-        # Altering class so all functions have the same format
+        # Altering class so alln functions have the same format
         com = SM_SENSOR_MAP[self._type]["com"]
         self._short_timeout = .05
         self._icons = SM_SENSOR_MAP[self._type]["icon"]
