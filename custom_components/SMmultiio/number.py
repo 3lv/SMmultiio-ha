@@ -11,8 +11,6 @@ import inspect
 from inspect import signature
 _LOGGER = logging.getLogger(__name__)
 
-import libioplus as SMioplus
-
 from homeassistant.components.light import PLATFORM_SCHEMA
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.number import NumberEntity
@@ -66,6 +64,7 @@ class Number(NumberEntity):
         self._value = 0
         self.__SM__init()
 
+
     def __SM__init(self):
         com = SM_MAP[self._type]["com"]
         self._SM = SM_API
@@ -80,6 +79,16 @@ class Number(NumberEntity):
             def _aux_SM_set(*args):
                 return getattr(self._SM, com["set"])(self._stack, *args)
             self._SM_set = _aux_SM_set
+        ### Only for motor because it doesn't take channel
+        if len(signature(self._SM_get).parameters) == 0:
+            def _aux2_SM_get(self, _):
+                return getattr(self, com["get"])()
+            self._SM_get = types.MethodType(_aux2_SM_get, self._SM)
+        self._SM_set = getattr(self._SM, com["set"])
+        if len(signature(self._SM_set).parameters) == 1:
+            def _aux2_SM_set(self, _, value):
+                getattr(self, com["set"])(value)
+            self._SM_set = types.MethodType(_aux2_SM_set, self._SM)
 
     def update(self):
         time.sleep(self._short_timeout)

@@ -61,13 +61,7 @@ class Sensor(SensorEntity):
         self._value = 0
         self.__SM__init()
 
-        # Custom setup
-        # I Don't like this hardcoded setup, maybe add a setup com in data.py
-        if self._type == "opto_cnt":
-            self._SM.rstOptoCount(self._stack, self._chan)
-            ## THIS DOESN"T WORK IDK WHY
-            res = self._SM.cfgOptoEdgeCount(self._stack, self._chan, 1)
-            _LOGGER.error(res) # res is 1, so it SHOULD be working
+        # Custom setup START
         ## END
 
     def __SM__init(self):
