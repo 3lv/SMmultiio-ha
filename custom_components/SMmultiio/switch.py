@@ -126,3 +126,4 @@ class Switch(SwitchEntity):
         try:
             self._SM_set(self._chan, 0)
         except Exception as ex:
+            _LOGGER.error(DOMAIN + " %s turn OFF failed, %e", self._type, ex);
