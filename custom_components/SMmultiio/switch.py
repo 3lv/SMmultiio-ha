@@ -3,31 +3,28 @@ DEFAULT_ICONS = {
         "off": "mdi:toggle-switch-variant-off",
 }
 
-import voluptuous as vol
-import libioplus as SMioplus
 import logging
 import time
+import types
 import inspect
+from inspect import signature
 
 from homeassistant.const import (
 	CONF_NAME
 )
 
-from homeassistant.components.light import PLATFORM_SCHEMA
-import homeassistant.helpers.config_validation as cv
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity import generate_entity_id
 
 from . import (
         DOMAIN, CONF_STACK, CONF_TYPE, CONF_CHAN, CONF_NAME,
-        NAME_PREFIX,
         SM_MAP, SM_API
 )
 SM_MAP = SM_MAP["switch"]
 
 _LOGGER = logging.getLogger(__name__)
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, add_devices, discovery_info=None):
     # We want this platform to be setup via discovery
     if discovery_info == None:
         return
@@ -62,13 +59,34 @@ class Switch(SwitchEntity):
             self._SM = self._SM(self._stack)
             self._SM_get = getattr(self._SM, com["get"])
             self._SM_set = getattr(self._SM, com["set"])
+            ### Make API compatible if channel is not used (_)
+            if len(signature(self._SM_get).parameters) == 0:
+                def _aux2_SM_get(self, _):
+                    return getattr(self, com["get"])()
+                self._SM_get = types.MethodType(_aux2_SM_get, self._SM)
+            if len(signature(self._SM_set).parameters) == 1:
+                def _aux2_SM_set(self, _, value):
+                    getattr(self, com["set"])(value)
+                self._SM_set = types.MethodType(_aux2_SM_set, self._SM)
         else:
-            def _aux_SM_get(*args):
-                return getattr(self._SM, com["get"])(self._stack, *args)
-            self._SM_get = _aux_SM_get
-            def _aux_SM_set(*args):
-                return getattr(self._SM, com["set"])(self._stack, *args)
-            self._SM_set = _aux_SM_set
+            _SM_get = getattr(self._SM, com["get"])
+            if len(signature(_SM_get).parameters) == 1:
+                def _aux3_SM_get(_, *args):
+                    return _SM_get(self._stack, *args)
+                self._SM_get = _aux3_SM_get
+            else:
+                def _aux_SM_get(*args):
+                    return _SM_get(self._stack, *args)
+                self._SM_get = _aux_SM_get
+            _SM_set = getattr(self._SM, com["set"])
+            if len(signature(_SM_set).parameters) == 2:
+                def _aux3_SM_set(_, *args):
+                    return _SM_set(self._stack, *args)
+                self._SM_set = _aux3_SM_set
+            else:
+                def _aux_SM_set(*args):
+                    return _SM_set(self._stack, *args)
+                self._SM_set = _aux_SM_set
 
     def update(self):
         time.sleep(self._short_timeout)
@@ -108,4 +126,3 @@ class Switch(SwitchEntity):
         try:
             self._SM_set(self._chan, 0)
         except Exception as ex:
-            _LOGGER.error(DOMAIN + " %s turn OFF failed, %e", self._type, ex);

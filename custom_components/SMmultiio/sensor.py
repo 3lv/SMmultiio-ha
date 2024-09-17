@@ -3,17 +3,12 @@ DEFAULT_ICONS = {
         "off": "mdi:numeric-0",
 }
 
-import voluptuous as vol
 import logging
 import time
 import types
 import inspect
 from inspect import signature
 
-import libioplus as SMioplus
-
-from homeassistant.components.light import PLATFORM_SCHEMA
-import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.entity import generate_entity_id
 
@@ -23,17 +18,9 @@ from . import (
 )
 SM_MAP = SM_MAP["sensor"]
 
-#SCHEMA_EXTEND = {
-#	vol.Optional(CONF_NAME, default=""): cv.string,
-#	vol.Optional(CONF_STACK, default="0"): cv.string,
-#}
-#for key in SM_SENSOR_MAP:
-#    SCHEMA_EXTEND[vol.Optional(key, default="-1")] = cv.string
-#PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(SCHEMA_EXTEND)
-
 _LOGGER = logging.getLogger(__name__)
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, add_devices, discovery_info=None):
     # We want this platform to be setup via discovery
     if discovery_info == None:
         return
@@ -57,11 +44,11 @@ class Sensor(SensorEntity):
         self._short_timeout = .05
         self._icons = DEFAULT_ICONS | SM_MAP[self._type].get("icon", {})
         self._icon = self._icons["off"]
-        self._uom = SM_MAP[self._type]["uom"]
+        self._uom = SM_MAP[self._type].get("uom", "")
         self._value = 0
         self.__SM__init()
 
-        # Custom setup START
+        # Custom setup END
         ## END
 
     def __SM__init(self):
@@ -70,16 +57,23 @@ class Sensor(SensorEntity):
         if inspect.isclass(self._SM):
             self._SM = self._SM(self._stack)
             self._SM_get = getattr(self._SM, com["get"])
+            ### Make API compatible if channel is not used (_)
+            if len(signature(self._SM_get).parameters) == 0:
+                def _aux2_SM_get(self, _):
+                    return getattr(self, com["get"])()
+                self._SM_get = types.MethodType(_aux2_SM_get, self._SM)
         else:
-            def _aux_SM_get(*args):
-                return getattr(self._SM, com["get"])(self._stack, *args)
-            self._SM_get = _aux_SM_get
+            _SM_get = getattr(self._SM, com["get"])
+            if len(signature(_SM_get).parameters) == 1:
+                def _aux3_SM_get(_, *args):
+                    return _SM_get(self._stack, *args)
+                self._SM_get = _aux3_SM_get
+            else:
+                def _aux_SM_get(*args):
+                    return _SM_get(self._stack, *args)
+                self._SM_get = _aux_SM_get
 
     def update(self):
-        if self._type == "opto_cnt":
-            time.sleep(self._short_timeout)
-            ## IT DOESN"T WORK WITHOUT THIS IDK WHY
-            self._SM.cfgOptoEdgeCount(self._stack, self._chan, 1)
         time.sleep(self._short_timeout)
         try:
             self._value = self._SM_get(self._chan)

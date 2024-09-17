@@ -3,7 +3,6 @@ DEFAULT_ICONS = {
         "off": "mdi:numeric-0",
 }
 
-import voluptuous as vol
 import logging
 import time
 import types
@@ -11,8 +10,6 @@ import inspect
 from inspect import signature
 _LOGGER = logging.getLogger(__name__)
 
-from homeassistant.components.light import PLATFORM_SCHEMA
-import homeassistant.helpers.config_validation as cv
 from homeassistant.components.number import NumberEntity
 from homeassistant.helpers.entity import generate_entity_id
 
@@ -23,7 +20,7 @@ from . import (
 )
 SM_MAP = SM_MAP["number"]
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, add_devices, discovery_info=None):
     # We want this platform to be setup via discovery
     if discovery_info == None:
         return
@@ -57,14 +54,14 @@ class Number(NumberEntity):
         self._short_timeout = .05
         self._icons = DEFAULT_ICONS | SM_MAP[self._type].get("icon", {})
         self._icon = self._icons["off"]
-        self._uom = SM_MAP[self._type]["uom"]
+        self._uom = SM_MAP[self._type].get("uom", "")
         self._min_value = SM_MAP[self._type]["min_value"]
         self._max_value = SM_MAP[self._type]["max_value"]
         self._step = SM_MAP[self._type]["step"]
         self._value = 0
         self.__SM__init()
 
-
+    ### Make API compatible if channel is not used or if it requires integer value
     def __SM__init(self):
         com = SM_MAP[self._type]["com"]
         self._SM = SM_API
@@ -72,23 +69,43 @@ class Number(NumberEntity):
             self._SM = self._SM(self._stack)
             self._SM_get = getattr(self._SM, com["get"])
             self._SM_set = getattr(self._SM, com["set"])
+            if len(signature(self._SM_get).parameters) == 0:
+                def _aux2_SM_get(self, _):
+                    return getattr(self, com["get"])()
+                self._SM_get = types.MethodType(_aux2_SM_get, self._SM)
+            if len(signature(self._SM_set).parameters) == 1:
+                def _aux2_SM_set(self, _, value):
+                    getattr(self, com["set"])(value)
+                self._SM_set = types.MethodType(_aux2_SM_set, self._SM)
         else:
-            def _aux_SM_get(*args):
-                return getattr(self._SM, com["get"])(self._stack, *args)
-            self._SM_get = _aux_SM_get
-            def _aux_SM_set(*args):
-                return getattr(self._SM, com["set"])(self._stack, *args)
-            self._SM_set = _aux_SM_set
-        ### Only for motor because it doesn't take channel
-        if len(signature(self._SM_get).parameters) == 0:
-            def _aux2_SM_get(self, _):
-                return getattr(self, com["get"])()
-            self._SM_get = types.MethodType(_aux2_SM_get, self._SM)
-        self._SM_set = getattr(self._SM, com["set"])
-        if len(signature(self._SM_set).parameters) == 1:
-            def _aux2_SM_set(self, _, value):
-                getattr(self, com["set"])(value)
-            self._SM_set = types.MethodType(_aux2_SM_set, self._SM)
+            _SM_get = getattr(self._SM, com["get"])
+            if len(signature(_SM_get).parameters) == 1:
+                def _aux3_SM_get(_):
+                    return _SM_get(self._stack)
+                self._SM_get = _aux3_SM_get
+            else:
+                def _aux_SM_get(chan):
+                    return _SM_get(self._stack, chan)
+                self._SM_get = _aux_SM_get
+            _SM_set = getattr(self._SM, com["set"])
+            if self._step == int(self._step):
+                if len(signature(_SM_set).parameters) == 2:
+                    def _aux3_SM_set(_, value):
+                        return _SM_set(self._stack, int(value))
+                    self._SM_set = _aux3_SM_set
+                else:
+                    def _aux_SM_set(chan, value):
+                        return _SM_set(self._stack, chan, int(value))
+                    self._SM_set = _aux_SM_set
+            else:
+                if len(signature(_SM_set).parameters) == 2:
+                    def _aux3_SM_set(_, value):
+                        return _SM_set(self._stack, value)
+                    self._SM_set = _aux3_SM_set
+                else:
+                    def _aux_SM_set(chan, value):
+                        return _SM_set(self._stack, chan, value)
+                    self._SM_set = _aux_SM_set
 
     def update(self):
         time.sleep(self._short_timeout)
@@ -142,7 +159,7 @@ class Number(NumberEntity):
 
 ## Lazy class, uses the set value as the get value
 class Number_NOGET(Number):
-    ## TODO
+    ## TODO implement
     def update(self):
         time.sleep(self._short_timeout)
         if self._value != 0:
